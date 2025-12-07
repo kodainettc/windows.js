@@ -1,0 +1,801 @@
+<html>
+<head>
+	<title>Modern WindowScript with Taskbar</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			padding: 20px;
+			color: #333;
+		}
+
+		.container {
+			max-width: 1400px;
+			margin: 0 auto;
+		}
+
+		h1 {
+			color: white;
+			text-align: center;
+			margin-bottom: 20px;
+			text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+		}
+
+		.controls {
+			background: rgba(255, 255, 255, 0.9);
+			padding: 15px;
+			border-radius: 10px;
+			margin-bottom: 20px;
+			display: flex;
+			gap: 10px;
+			flex-wrap: wrap;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+		}
+
+		button {
+			padding: 10px 20px;
+			background: linear-gradient(to right, #4CAF50, #45a049);
+			color: white;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+			font-weight: bold;
+			transition: all 0.3s ease;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+		}
+
+		button:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+			background: linear-gradient(to right, #45a049, #4CAF50);
+		}
+
+		button.danger {
+			background: linear-gradient(to right, #ff416c, #ff4b2b);
+		}
+
+		.info {
+			background: rgba(255, 255, 255, 0.9);
+			padding: 15px;
+			border-radius: 10px;
+			margin-bottom: 20px;
+			box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+		}
+
+		.info p {
+			margin-bottom: 5px;
+			font-size: 14px;
+		}
+
+		/* Taskbar Styles */
+		.taskbar {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			height: 50px;
+			background: rgba(0, 0, 0, 0.85);
+			backdrop-filter: blur(10px);
+			display: flex;
+			align-items: center;
+			padding: 0 20px;
+			gap: 10px;
+			z-index: 10000;
+			border-top: 1px solid rgba(255, 255, 255, 0.1);
+			box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+		}
+
+		.taskbar-item {
+			height: 40px;
+			min-width: 120px;
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 5px;
+			display: flex;
+			align-items: center;
+			padding: 0 15px;
+			color: white;
+			cursor: pointer;
+			font-size: 12px;
+			transition: all 0.3s ease;
+			border: 1px solid transparent;
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+		}
+
+		.taskbar-item:hover {
+			background: rgba(255, 255, 255, 0.2);
+			transform: translateY(-2px);
+		}
+
+		.taskbar-item.active {
+			background: rgba(255, 255, 255, 0.25);
+			border-color: rgba(255, 255, 255, 0.3);
+		}
+
+		.taskbar-item .title {
+			flex: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.taskbar-item .close-btn {
+			margin-left: 10px;
+			color: #ff6b6b;
+			font-weight: bold;
+			font-size: 14px;
+			opacity: 0;
+			transition: opacity 0.3s;
+		}
+
+		.taskbar-item:hover .close-btn {
+			opacity: 1;
+		}
+
+		/* Window Styles */
+		.window {
+			position: absolute;
+			background: white;
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+			transition: all 0.3s ease;
+			display: flex;
+			flex-direction: column;
+			min-width: 200px;
+			min-height: 150px;
+			z-index: 1000;
+			border: 1px solid rgba(255, 255, 255, 0.2);
+		}
+
+		.window.maximized {
+			top: 20px !important;
+			left: 20px !important;
+			width: calc(100% - 40px) !important;
+			height: calc(100% - 90px) !important;
+			border-radius: 0;
+		}
+
+		.window.minimized {
+			display: none;
+		}
+
+		.window-header {
+			height: 40px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			padding: 0 15px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			cursor: move;
+			user-select: none;
+			font-weight: 500;
+		}
+
+		.window-title {
+			flex: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.window-controls {
+			display: flex;
+			gap: 5px;
+		}
+
+		.window-controls button {
+			width: 28px;
+			height: 28px;
+			padding: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 14px;
+			background: rgba(255, 255, 255, 0.1);
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			box-shadow: none;
+		}
+
+		.window-controls button:hover {
+			background: rgba(255, 255, 255, 0.2);
+			transform: none;
+		}
+
+		.window-controls .close-btn {
+			color: #ff6b6b;
+		}
+
+		.window-content {
+			flex: 1;
+			padding: 20px;
+			overflow: auto;
+			background: white;
+			font-size: 14px;
+			line-height: 1.6;
+		}
+
+		.window-resize {
+			position: absolute;
+			right: 0;
+			bottom: 0;
+			width: 15px;
+			height: 15px;
+			cursor: nwse-resize;
+			background: linear-gradient(135deg, transparent 50%, #667eea 50%);
+		}
+
+		/* Scrollbar Styling */
+		.window-content::-webkit-scrollbar {
+			width: 8px;
+		}
+
+		.window-content::-webkit-scrollbar-track {
+			background: #f1f1f1;
+		}
+
+		.window-content::-webkit-scrollbar-thumb {
+			background: #c1c1c1;
+			border-radius: 4px;
+		}
+
+		.window-content::-webkit-scrollbar-thumb:hover {
+			background: #a8a8a8;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<h1>🎮 Modern Window Manager with Taskbar</h1>
+		
+		<div class="controls">
+			<button onclick="WindowManager.addWindow()">➕ Add New Window</button>
+			<button onclick="WindowManager.arrangeWindows()">📐 Arrange Windows</button>
+			<button onclick="WindowManager.config.keepInside = !WindowManager.config.keepInside; updateInfo()">
+				🔒 Toggle Keep Inside: <span id="keepInsideStatus">Off</span>
+			</button>
+			<button onclick="WindowManager.minimizeAll()">📥 Minimize All</button>
+			<button onclick="WindowManager.restoreAll()">📤 Restore All</button>
+			<button class="danger" onclick="WindowManager.closeAll()">❌ Close All Windows</button>
+		</div>
+		
+		<div class="info">
+			<p><strong>📝 Instructions:</strong></p>
+			<p>• Drag the header to move windows</p>
+			<p>• Use the resize handle (bottom-right corner) to resize</p>
+			<p>• Double-click header or click □ to maximize</p>
+			<p>• Click _ to minimize to taskbar</p>
+			<p>• Click taskbar items to restore minimized windows</p>
+			<p>• Click × on taskbar items to close windows</p>
+			<p>• <strong>Keep Inside:</strong> <span id="keepInsideText">Windows can be moved outside screen</span></p>
+		</div>
+	</div>
+
+	<!-- Taskbar -->
+	<div class="taskbar" id="taskbar"></div>
+
+	<script>
+		const WindowManager = {
+			windows: [],
+			zIndex: 1000,
+			dragObj: null,
+			resizeObj: null,
+			activeWindow: null,
+			nextWindowId: 1,
+			taskbar: null,
+			
+			config: {
+				keepInside: false,
+				minX: 0,
+				minY: 0,
+				maxX: null,
+				maxY: null,
+				spacing: 15,
+				startY: 20,
+				defaultWidth: 350,
+				defaultHeight: 250
+			},
+			
+			init: function() {
+				this.updatePageSize();
+				this.taskbar = document.getElementById('taskbar');
+				
+				window.addEventListener('resize', () => {
+					this.updatePageSize();
+					this.updateMaximizedWindows();
+				});
+				
+				document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+				document.addEventListener('mouseup', (e) => this.onMouseUp(e));
+				
+				updateInfo();
+				
+				// Add some example windows
+				setTimeout(() => {
+					this.addWindow('Welcome', `
+						<h3>👋 Welcome to Window Manager!</h3>
+						<p>This is a modern window manager with taskbar support.</p>
+						<p>Try these features:</p>
+						<ul>
+							<li>Drag windows around</li>
+							<li>Resize windows</li>
+							<li>Minimize to taskbar</li>
+							<li>Maximize windows</li>
+							<li>Close windows from taskbar</li>
+						</ul>
+						<p>You can create new windows using the "Add New Window" button above.</p>
+					`, '#e3f2fd', '#bbdefb');
+					
+					this.addWindow('Sample Content', `
+						<h3>📄 Sample Document</h3>
+						<p>This window demonstrates content scrolling.</p>
+						${Array.from({length: 20}, (_, i) => 
+							`<p>Line ${i + 1}: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>`
+						).join('')}
+					`, '#f3e5f5', '#e1bee7');
+				}, 100);
+			},
+			
+			updatePageSize: function() {
+				const taskbarHeight = 50;
+				this.pageSize = {
+					width: window.innerWidth,
+					height: window.innerHeight - taskbarHeight,
+					taskbarHeight: taskbarHeight
+				};
+				
+				this.config.maxX = this.pageSize.width - 50;
+				this.config.maxY = this.pageSize.height - 50;
+			},
+			
+			updateMaximizedWindows: function() {
+				this.windows.forEach(win => {
+					if (win.state === 'maximized') {
+						this.maximize(win);
+					}
+				});
+			},
+			
+			addWindow: function(title, content, bgColor, activeColor) {
+				const id = `window_${this.nextWindowId++}`;
+				title = title || `Window ${this.nextWindowId - 1}`;
+				content = content || `
+					<h3>New Window</h3>
+					<p>This is a new window created at ${new Date().toLocaleTimeString()}</p>
+					<p>You can edit this content as needed.</p>
+				`;
+				bgColor = bgColor || '#ffffff';
+				activeColor = activeColor || '#f5f5f5';
+				
+				const win = {
+					id: id,
+					title: title,
+					content: content,
+					x: Math.random() * (this.pageSize.width - 400) + 100,
+					y: Math.random() * (this.pageSize.height - 300) + 50,
+					width: this.config.defaultWidth,
+					height: this.config.defaultHeight,
+					originalX: 0,
+					originalY: 0,
+					originalWidth: 0,
+					originalHeight: 0,
+					bgColor: bgColor,
+					activeColor: activeColor,
+					state: 'normal',
+					zIndex: ++this.zIndex,
+					element: null,
+					contentElement: null,
+					taskbarItem: null
+				};
+				
+				this.createWindowElement(win);
+				this.createTaskbarItem(win);
+				this.windows.push(win);
+				this.bringToFront(win);
+				return win;
+			},
+			
+			createWindowElement: function(win) {
+				const windowEl = document.createElement('div');
+				windowEl.className = 'window';
+				windowEl.id = win.id;
+				windowEl.style.cssText = `
+					left: ${win.x}px;
+					top: ${win.y}px;
+					width: ${win.width}px;
+					height: ${win.height}px;
+					z-index: ${win.zIndex};
+				`;
+				
+				// Header
+				const header = document.createElement('div');
+				header.className = 'window-header';
+				header.innerHTML = `
+					<div class="window-title">${win.title}</div>
+					<div class="window-controls">
+						<button class="min-btn" title="Minimize to Taskbar">_</button>
+						<button class="max-btn" title="Maximize">□</button>
+						<button class="close-btn" title="Close">×</button>
+					</div>
+				`;
+				
+				// Content
+				const content = document.createElement('div');
+				content.className = 'window-content';
+				content.innerHTML = win.content;
+				content.style.backgroundColor = win.bgColor;
+				
+				// Resize handle
+				const resizeHandle = document.createElement('div');
+				resizeHandle.className = 'window-resize';
+				
+				// Assemble
+				windowEl.appendChild(header);
+				windowEl.appendChild(content);
+				windowEl.appendChild(resizeHandle);
+				document.body.appendChild(windowEl);
+				
+				// Store references
+				win.element = windowEl;
+				win.contentElement = content;
+				
+				// Event Listeners
+				header.addEventListener('mousedown', (e) => this.startDrag(win, e));
+				header.addEventListener('dblclick', () => this.toggleMaximize(win));
+				
+				const minBtn = header.querySelector('.min-btn');
+				const maxBtn = header.querySelector('.max-btn');
+				const closeBtn = header.querySelector('.close-btn');
+				
+				minBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.minimize(win);
+				});
+				
+				maxBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.toggleMaximize(win);
+				});
+				
+				closeBtn.addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.closeWindow(win);
+				});
+				
+				resizeHandle.addEventListener('mousedown', (e) => {
+					e.stopPropagation();
+					this.startResize(win, e);
+				});
+				
+				windowEl.addEventListener('mousedown', () => this.bringToFront(win));
+			},
+			
+			createTaskbarItem: function(win) {
+				const taskbarItem = document.createElement('div');
+				taskbarItem.className = 'taskbar-item';
+				taskbarItem.innerHTML = `
+					<div class="title">${win.title}</div>
+					<div class="close-btn" title="Close Window">×</div>
+				`;
+				
+				taskbarItem.addEventListener('click', () => {
+					if (win.state === 'minimized') {
+						this.restore(win);
+					} else {
+						this.bringToFront(win);
+					}
+				});
+				
+				taskbarItem.querySelector('.close-btn').addEventListener('click', (e) => {
+					e.stopPropagation();
+					this.closeWindow(win);
+				});
+				
+				this.taskbar.appendChild(taskbarItem);
+				win.taskbarItem = taskbarItem;
+			},
+			
+			updateTaskbarItem: function(win) {
+				if (win.taskbarItem) {
+					if (win.state === 'minimized') {
+						win.taskbarItem.classList.add('active');
+					} else {
+						win.taskbarItem.classList.remove('active');
+					}
+				}
+			},
+			
+			startDrag: function(win, e) {
+				e.preventDefault();
+				this.dragObj = {
+					window: win,
+					offsetX: e.clientX - win.element.offsetLeft,
+					offsetY: e.clientY - win.element.offsetTop
+				};
+				this.bringToFront(win);
+			},
+			
+			startResize: function(win, e) {
+				e.preventDefault();
+				this.resizeObj = {
+					window: win,
+					startX: e.clientX,
+					startY: e.clientY,
+					startWidth: win.element.offsetWidth,
+					startHeight: win.element.offsetHeight
+				};
+				this.bringToFront(win);
+			},
+			
+			onMouseMove: function(e) {
+				// Dragging
+				if (this.dragObj) {
+					const win = this.dragObj.window;
+					let newX = e.clientX - this.dragObj.offsetX;
+					let newY = e.clientY - this.dragObj.offsetY;
+					
+					if (this.config.keepInside) {
+						newX = Math.max(this.config.minX, 
+							Math.min(newX, this.config.maxX - win.element.offsetWidth));
+						newY = Math.max(this.config.minY, 
+							Math.min(newY, this.config.maxY - win.element.offsetHeight));
+					}
+					
+					win.element.style.left = newX + 'px';
+					win.element.style.top = newY + 'px';
+					win.x = newX;
+					win.y = newY;
+				}
+				
+				// Resizing
+				if (this.resizeObj) {
+					const win = this.resizeObj.window;
+					const deltaX = e.clientX - this.resizeObj.startX;
+					const deltaY = e.clientY - this.resizeObj.startY;
+					
+					let newWidth = Math.max(200, this.resizeObj.startWidth + deltaX);
+					let newHeight = Math.max(150, this.resizeObj.startHeight + deltaY);
+					
+					if (this.config.keepInside) {
+						newWidth = Math.min(newWidth, this.config.maxX - win.x);
+						newHeight = Math.min(newHeight, this.config.maxY - win.y);
+					}
+					
+					win.element.style.width = newWidth + 'px';
+					win.element.style.height = newHeight + 'px';
+					win.width = newWidth;
+					win.height = newHeight;
+				}
+			},
+			
+			onMouseUp: function() {
+				this.dragObj = null;
+				this.resizeObj = null;
+			},
+			
+			bringToFront: function(win) {
+				this.activeWindow = win;
+				win.zIndex = ++this.zIndex;
+				win.element.style.zIndex = win.zIndex;
+				
+				// Update background colors
+				this.windows.forEach(w => {
+					if (w.contentElement) {
+						w.contentElement.style.backgroundColor = 
+							(w === win) ? w.activeColor : w.bgColor;
+					}
+				});
+				
+				this.updateTaskbarItem(win);
+			},
+			
+			minimize: function(win) {
+				if (win.state !== 'minimized') {
+					// Save original state
+					win.originalX = win.x;
+					win.originalY = win.y;
+					win.originalWidth = win.width;
+					win.originalHeight = win.height;
+					win.originalZIndex = win.zIndex;
+					
+					// Hide window
+					win.element.style.display = 'none';
+					win.state = 'minimized';
+					
+					// Update taskbar
+					this.updateTaskbarItem(win);
+					
+					// Bring next window to front
+					const visibleWindows = this.windows.filter(w => 
+						w.state !== 'minimized' && w !== win);
+					if (visibleWindows.length > 0) {
+						this.bringToFront(visibleWindows[0]);
+					}
+				}
+			},
+			
+			restore: function(win) {
+				if (win.state === 'minimized') {
+					// Show window
+					win.element.style.display = 'flex';
+					win.element.style.left = win.originalX + 'px';
+					win.element.style.top = win.originalY + 'px';
+					win.element.style.width = win.originalWidth + 'px';
+					win.element.style.height = win.originalHeight + 'px';
+					
+					win.x = win.originalX;
+					win.y = win.originalY;
+					win.width = win.originalWidth;
+					win.height = win.originalHeight;
+					win.state = 'normal';
+					
+					// Update taskbar and bring to front
+					this.updateTaskbarItem(win);
+					this.bringToFront(win);
+				}
+			},
+			
+			toggleMaximize: function(win) {
+				if (win.state === 'maximized') {
+					this.restoreFromMaximize(win);
+				} else {
+					this.maximize(win);
+				}
+			},
+			
+			maximize: function(win) {
+				if (win.state !== 'maximized') {
+					// Save original state
+					if (win.state !== 'minimized') {
+						win.originalX = win.x;
+						win.originalY = win.y;
+						win.originalWidth = win.width;
+						win.originalHeight = win.height;
+					}
+					
+					// Maximize
+					win.element.classList.add('maximized');
+					win.element.style.display = 'flex';
+					win.state = 'maximized';
+					
+					this.updateTaskbarItem(win);
+					this.bringToFront(win);
+				}
+			},
+			
+			restoreFromMaximize: function(win) {
+				if (win.state === 'maximized') {
+					// Restore from maximized state
+					win.element.classList.remove('maximized');
+					win.element.style.left = win.originalX + 'px';
+					win.element.style.top = win.originalY + 'px';
+					win.element.style.width = win.originalWidth + 'px';
+					win.element.style.height = win.originalHeight + 'px';
+					
+					win.x = win.originalX;
+					win.y = win.originalY;
+					win.width = win.originalWidth;
+					win.height = win.originalHeight;
+					win.state = 'normal';
+					
+					this.updateTaskbarItem(win);
+					this.bringToFront(win);
+				}
+			},
+			
+			closeWindow: function(win) {
+				const index = this.windows.indexOf(win);
+				if (index > -1) {
+					this.windows.splice(index, 1);
+				}
+				
+				if (win.element) {
+					win.element.remove();
+				}
+				
+				if (win.taskbarItem) {
+					win.taskbarItem.remove();
+				}
+				
+				if (this.activeWindow === win) {
+					this.activeWindow = this.windows.length > 0 ? 
+						this.windows[this.windows.length - 1] : null;
+					if (this.activeWindow) {
+						this.bringToFront(this.activeWindow);
+					}
+				}
+			},
+			
+			closeAll: function() {
+				while (this.windows.length > 0) {
+					this.closeWindow(this.windows[0]);
+				}
+			},
+			
+			minimizeAll: function() {
+				this.windows.forEach(win => {
+					if (win.state !== 'minimized') {
+						this.minimize(win);
+					}
+				});
+			},
+			
+			restoreAll: function() {
+				this.windows.forEach(win => {
+					if (win.state === 'minimized') {
+						this.restore(win);
+					}
+				});
+			},
+			
+			arrangeWindows: function() {
+				this.updatePageSize();
+				const cols = 3;
+				const rows = Math.ceil(this.windows.length / cols);
+				const spacing = this.config.spacing;
+				const taskbarHeight = 50;
+				
+				const availableWidth = this.pageSize.width - spacing * (cols + 1);
+				const availableHeight = this.pageSize.height - spacing * (rows + 1);
+				
+				const cellWidth = Math.floor(availableWidth / cols);
+				const cellHeight = Math.floor(availableHeight / rows);
+				
+				this.windows.forEach((win, index) => {
+					if (win.state === 'minimized') return;
+					
+					// Restore if maximized
+					if (win.state === 'maximized') {
+						this.restoreFromMaximize(win);
+					}
+					
+					const col = index % cols;
+					const row = Math.floor(index / cols);
+					
+					const x = spacing + col * (cellWidth + spacing);
+					const y = this.config.startY + spacing + row * (cellHeight + spacing);
+					
+					win.element.style.width = Math.min(cellWidth, win.originalWidth || win.width) + 'px';
+					win.element.style.height = Math.min(cellHeight, win.originalHeight || win.height) + 'px';
+					win.element.style.left = x + 'px';
+					win.element.style.top = y + 'px';
+					
+					win.x = x;
+					win.y = y;
+					win.width = Math.min(cellWidth, win.originalWidth || win.width);
+					win.height = Math.min(cellHeight, win.originalHeight || win.height);
+					win.state = 'normal';
+					
+					this.updateTaskbarItem(win);
+				});
+			}
+		};
+
+		function updateInfo() {
+			const status = WindowManager.config.keepInside ? 'On' : 'Off';
+			const text = WindowManager.config.keepInside ? 
+				'Windows are kept inside screen bounds' : 
+				'Windows can be moved outside screen';
+			
+			document.getElementById('keepInsideStatus').textContent = status;
+			document.getElementById('keepInsideText').textContent = text;
+		}
+
+		// Initialize when page loads
+		document.addEventListener('DOMContentLoaded', () => WindowManager.init());
+	</script>
+</body>
+</html>
