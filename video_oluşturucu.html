@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resimlerden Video Oluşturucu</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #fdbb2d;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fdbb2d, #b21f1f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ddd;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .app-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 900px) {
+            .app-area {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .panel-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #fdbb2d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title i {
+            font-size: 1.8rem;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #b21f1f, #fdbb2d);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .slider-container {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .slider-value {
+            font-weight: bold;
+            color: #fdbb2d;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 10px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #fdbb2d;
+            cursor: pointer;
+        }
+        
+        .image-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+        
+        .image-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background-color: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .video-container {
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        
+        video {
+            width: 100%;
+            display: block;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status.success {
+            background-color: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.5);
+            color: #2ecc71;
+        }
+        
+        .status.error {
+            background-color: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+        }
+        
+        .status.info {
+            background-color: rgba(52, 152, 219, 0.2);
+            border: 1px solid rgba(52, 152, 219, 0.5);
+            color: #3498db;
+        }
+        
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            border-left: 4px solid #fdbb2d;
+        }
+        
+        .instructions h3 {
+            color: #fdbb2d;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(to right, #b21f1f, #fdbb2d);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-images"></i> Resimlerden Video Oluşturucu</h1>
+            <p class="subtitle">Resimlerinizi yükleyin, ayarları yapılandırın ve HTML5 teknolojisiyle bir video oluşturun. Oluşturulan videoyu indirebilir veya doğrudan tarayıcınızda izleyebilirsiniz.</p>
+        </header>
+        
+        <div class="app-area">
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-upload"></i> Resim Yükleme
+                </div>
+                
+                <div class="controls">
+                    <button id="uploadBtn" class="btn">
+                        <i class="fas fa-folder-open"></i> Resimleri Seç
+                    </button>
+                    <button id="clearBtn" class="btn">
+                        <i class="fas fa-trash-alt"></i> Tümünü Temizle
+                    </button>
+                    <input type="file" id="imageInput" accept="image/*" multiple class="hidden">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Kare Hızı (saniye/kare):</span>
+                        <span id="frameSpeedValue" class="slider-value">1.0</span>
+                    </div>
+                    <input type="range" id="frameSpeed" min="0.1" max="3" step="0.1" value="1">
+                </div>
+                
+                <div class="panel-title">
+                    <i class="fas fa-list-ol"></i> Yüklenen Resimler (<span id="imageCount">0</span>)
+                </div>
+                
+                <div class="image-list" id="imageList">
+                    <div class="image-item empty">
+                        <i class="fas fa-image" style="font-size: 2rem; color: rgba(255,255,255,0.3);"></i>
+                    </div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress" id="uploadProgress"></div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">
+                    <i class="fas fa-video"></i> Video Oluşturma
+                </div>
+                
+                <div class="controls">
+                    <button id="createVideoBtn" class="btn" disabled>
+                        <i class="fas fa-film"></i> Video Oluştur
+                    </button>
+                    <button id="downloadBtn" class="btn" disabled>
+                        <i class="fas fa-download"></i> Videoyu İndir
+                    </button>
+                </div>
+                
+                <div class="video-container">
+                    <video id="outputVideo" controls></video>
+                </div>
+                
+                <div class="status info" id="statusMessage">
+                    <i class="fas fa-info-circle"></i> Resim yüklemek için "Resimleri Seç" butonuna tıklayın.
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress" id="videoProgress"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3><i class="fas fa-info-circle"></i> Nasıl Kullanılır:</h3>
+            <ol>
+                <li>"Resimleri Seç" butonuna tıklayarak video oluşturmak istediğiniz resimleri seçin.</li>
+                <li>Kare hızı ayarıyla her resmin videoda ne kadar süre görüneceğini belirleyin.</li>
+                <li>"Video Oluştur" butonuna tıklayarak resimlerinizden bir video oluşturun.</li>
+                <li>Oluşan videoyu tarayıcınızda izleyebilir veya "Videoyu İndir" butonuyla bilgisayarınıza kaydedebilirsiniz.</li>
+            </ol>
+        </div>
+        
+        <footer>
+            <p>HTML5 Canvas ve MediaStream API kullanılarak geliştirilmiştir. Tarayıcınızda çalışır, sunucuya yükleme gerektirmez.</p>
+            <p style="margin-top: 10px;">© 2023 Resimlerden Video Oluşturucu</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM elementlerini seçme
+            const imageInput = document.getElementById('imageInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const createVideoBtn = document.getElementById('createVideoBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const frameSpeed = document.getElementById('frameSpeed');
+            const frameSpeedValue = document.getElementById('frameSpeedValue');
+            const imageList = document.getElementById('imageList');
+            const imageCount = document.getElementById('imageCount');
+            const outputVideo = document.getElementById('outputVideo');
+            const statusMessage = document.getElementById('statusMessage');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const videoProgress = document.getElementById('videoProgress');
+            
+            let images = [];
+            let videoUrl = null;
+            
+            // Buton event listener'ları
+            uploadBtn.addEventListener('click', () => imageInput.click());
+            clearBtn.addEventListener('click', clearImages);
+            createVideoBtn.addEventListener('click', createVideo);
+            downloadBtn.addEventListener('click', downloadVideo);
+            frameSpeed.addEventListener('input', updateSpeedValue);
+            
+            // Resim yükleme işlemi
+            imageInput.addEventListener('change', handleImageUpload);
+            
+            // Hız değerini güncelleme
+            function updateSpeedValue() {
+                frameSpeedValue.textContent = frameSpeed.value;
+            }
+            
+            // Resim yükleme işleyicisi
+            function handleImageUpload(e) {
+                const files = e.target.files;
+                if (files.length === 0) return;
+                
+                // Yeni resimleri mevcut listeye ekle
+                const newImages = Array.from(files);
+                images.push(...newImages);
+                
+                updateImageList();
+                updateStatus(`${newImages.length} resim başarıyla yüklendi. Toplam resim: ${images.length}`, 'success');
+                updateUploadProgress();
+                
+                // Video oluştur butonunu aktif et
+                createVideoBtn.disabled = false;
+                
+                // Input'u sıfırla
+                imageInput.value = '';
+            }
+            
+            // Resim listesini güncelleme
+            function updateImageList() {
+                imageList.innerHTML = '';
+                
+                if (images.length === 0) {
+                    imageList.innerHTML = '<div class="image-item empty"><i class="fas fa-image" style="font-size: 2rem; color: rgba(255,255,255,0.3);"></i></div>';
+                    imageCount.textContent = '0';
+                    return;
+                }
+                
+                images.forEach((image, index) => {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const imageItem = document.createElement('div');
+                        imageItem.className = 'image-item';
+                        
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.alt = `Resim ${index + 1}`;
+                        
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'remove-image';
+                        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                        removeBtn.addEventListener('click', () => removeImage(index));
+                        
+                        imageItem.appendChild(img);
+                        imageItem.appendChild(removeBtn);
+                        imageList.appendChild(imageItem);
+                    };
+                    
+                    reader.readAsDataURL(image);
+                });
+                
+                imageCount.textContent = images.length;
+            }
+            
+            // Resim kaldırma
+            function removeImage(index) {
+                images.splice(index, 1);
+                updateImageList();
+                updateStatus(`Resim kaldırıldı. Kalan resim: ${images.length}`, 'info');
+                updateUploadProgress();
+                
+                if (images.length === 0) {
+                    createVideoBtn.disabled = true;
+                    downloadBtn.disabled = true;
+                }
+            }
+            
+            // Tüm resimleri temizleme
+            function clearImages() {
+                images = [];
+                updateImageList();
+                updateStatus('Tüm resimler temizlendi.', 'info');
+                createVideoBtn.disabled = true;
+                downloadBtn.disabled = true;
+                uploadProgress.style.width = '0%';
+                
+                // Video varsa temizle
+                if (videoUrl) {
+                    URL.revokeObjectURL(videoUrl);
+                    outputVideo.src = '';
+                    videoUrl = null;
+                }
+            }
+            
+            // Video oluşturma
+            function createVideo() {
+                if (images.length === 0) {
+                    updateStatus('Lütfen önce resim yükleyin.', 'error');
+                    return;
+                }
+                
+                updateStatus('Video oluşturuluyor, lütfen bekleyin...', 'info');
+                createVideoBtn.disabled = true;
+                downloadBtn.disabled = true;
+                videoProgress.style.width = '0%';
+                
+                // Canvas ve video ayarları
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // İlk resmi yükle ve canvas boyutlarını ayarla
+                const firstImage = new Image();
+                firstImage.onload = function() {
+                    canvas.width = firstImage.width;
+                    canvas.height = firstImage.height;
+                    
+                    // MediaRecorder ile video kaydetme
+                    const stream = canvas.captureStream();
+                    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                    
+                    const chunks = [];
+                    
+                    mediaRecorder.ondataavailable = function(e) {
+                        if (e.data.size > 0) {
+                            chunks.push(e.data);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = function() {
+                        const blob = new Blob(chunks, { type: 'video/webm' });
+                        
+                        // Önceki video URL'sini temizle
+                        if (videoUrl) {
+                            URL.revokeObjectURL(videoUrl);
+                        }
+                        
+                        videoUrl = URL.createObjectURL(blob);
+                        outputVideo.src = videoUrl;
+                        
+                        updateStatus(`Video başarıyla oluşturuldu! Toplam ${images.length} resim kullanıldı.`, 'success');
+                        createVideoBtn.disabled = false;
+                        downloadBtn.disabled = false;
+                        videoProgress.style.width = '100%';
+                    };
+                    
+                    // Resimleri çizme işlemi
+                    let currentIndex = 0;
+                    const frameDuration = parseFloat(frameSpeed.value) * 1000; // milisaniye cinsinden
+                    
+                    mediaRecorder.start();
+                    
+                    function drawNextFrame() {
+                        if (currentIndex >= images.length) {
+                            mediaRecorder.stop();
+                            return;
+                        }
+                        
+                        const img = new Image();
+                        img.onload = function() {
+                            // Canvas'ı temizle
+                            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                            
+                            // Resmi canvas'a çiz (ortala)
+                            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                            const x = (canvas.width - img.width * scale) / 2;
+                            const y = (canvas.height - img.height * scale) / 2;
+                            
+                            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                            
+                            // İlerleme çubuğunu güncelle
+                            const progress = ((currentIndex + 1) / images.length) * 100;
+                            videoProgress.style.width = `${progress}%`;
+                            
+                            currentIndex++;
+                            
+                            // Bir sonraki kare için zamanlayıcı
+                            setTimeout(drawNextFrame, frameDuration);
+                        };
+                        
+                        img.src = URL.createObjectURL(images[currentIndex]);
+                    }
+                    
+                    // İlk kareyi çizmeye başla
+                    drawNextFrame();
+                };
+                
+                firstImage.src = URL.createObjectURL(images[0]);
+            }
+            
+            // Video indirme
+            function downloadVideo() {
+                if (!videoUrl) {
+                    updateStatus('İndirilecek video bulunamadı. Lütfen önce video oluşturun.', 'error');
+                    return;
+                }
+                
+                const a = document.createElement('a');
+                a.href = videoUrl;
+                a.download = 'resimlerden-olusturulan-video.webm';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                updateStatus('Video indiriliyor...', 'success');
+            }
+            
+            // Durum mesajını güncelleme
+            function updateStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status ' + type;
+                
+                // Mesajı 5 saniye sonra temizle (hata ve başarı mesajları için)
+                if (type === 'success' || type === 'error') {
+                    setTimeout(() => {
+                        if (statusMessage.textContent === message) {
+                            statusMessage.className = 'status info';
+                            statusMessage.innerHTML = '<i class="fas fa-info-circle"></i> Video oluşturmak için "Video Oluştur" butonuna tıklayın.';
+                        }
+                    }, 5000);
+                }
+            }
+            
+            // Yükleme ilerleme çubuğunu güncelleme
+            function updateUploadProgress() {
+                const maxImages = 20; // Maksimum gösterilebilecek resim sayısı
+                const progress = Math.min((images.length / maxImages) * 100, 100);
+                uploadProgress.style.width = `${progress}%`;
+            }
+            
+            // Başlangıç durumunu ayarla
+            updateSpeedValue();
+            updateStatus('Resim yüklemek için "Resimleri Seç" butonuna tıklayın.', 'info');
+        });
+    </script>
+</body>
+</html>
